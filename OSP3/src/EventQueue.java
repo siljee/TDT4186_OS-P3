@@ -48,6 +48,11 @@ public class EventQueue
     public boolean isEmpty() {
 		return events.size() == 0;
 	}
+    
+    // TODO: DELETE
+    public int getSize() {
+    	return events.size();
+    }
 }
 
 

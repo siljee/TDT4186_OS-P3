@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.util.*;
 
+import javax.sql.rowset.CachedRowSet;
+
 /**
  * This class contains data associated with processes,
  * and methods for manipulating this data as well as
@@ -22,11 +24,13 @@ public class Process implements Constants
     private long memoryNeeded;
 	/** The amount of cpu time still needed by this process */
     private long cpuTimeNeeded;
+    private long ioTimeNeeded;
 	/** The average time between the need for I/O operations for this process */
     private long avgIoInterval;
 	/** The time left until the next time this process needs I/O */
     private long timeToNextIoOperation = 0;
 
+    // These variables will be used for statistics 
 	/** The time that this process has spent waiting in the memory queue */
 	private long timeSpentWaitingForMemory = 0;
 	/** The time that this process has spent waiting in the CPU queue */
@@ -38,6 +42,8 @@ public class Process implements Constants
 	/** The time that this process has spent performing I/O */
 	private long timeSpentInIo = 0;
 
+	/** The number of times that this process has been placed in the memory queue */
+	private long nofTimesInMemoryQueue = 0;
 	/** The number of times that this process has been placed in the CPU queue */
 	private long nofTimesInReadyQueue = 0;
 	/** The number of times that this process has been placed in the I/O queue */
@@ -59,6 +65,8 @@ public class Process implements Constants
 		cpuTimeNeeded = 100 + (long)(Math.random()*9900);
 		// Average interval between I/O requests varies from 1% to 25% of CPU time needed
 		avgIoInterval = (1 + (long)(Math.random()*25))*cpuTimeNeeded/100;
+		timeToNextIoOperation = avgIoInterval;
+		ioTimeNeeded = avgIoInterval; // TODO: RANDOMIZE som i oppgave teksten (s.8?)
 		// The first and latest event involving this process is its creation
 		timeOfLastEvent = creationTime;
 		// Assign a process ID
@@ -88,16 +96,6 @@ public class Process implements Constants
 		g.drawString(""+processId, x+w/2-fm.stringWidth(""+processId)/2, y+h/2+fm.getHeight()/2);
 	}
 
-	/**
-	 * This method is called when the process leaves the memory queue (and
-	 * enters the cpu queue).
-     * @param clock The time when the process leaves the memory queue.
-     */
-    public void leftMemoryQueue(long clock) {
-		  timeSpentWaitingForMemory += clock - timeOfLastEvent;
-		  timeOfLastEvent = clock;
-    }
-
     /**
 	 * Returns the amount of memory needed by this process.
      * @return	The amount of memory needed by this process.
@@ -106,6 +104,37 @@ public class Process implements Constants
 		return memoryNeeded;
 	}
 
+
+	
+	
+	/** 
+	 * Returns the amount of cpu-time that is left for the process.
+	 * @return
+	 */
+	public long timeLeftInCpu() {
+		return cpuTimeNeeded - timeSpentInCpu;
+	}
+	
+	/**
+	 * Returns time until next IO_REQUEST for this process.
+	 * @return
+	 */
+	public long timeBeforeIo() {
+		return timeToNextIoOperation; 			// TODO: Husk å oppdatere tiden!
+	}
+	
+	/** 
+	 * Returns the amount of cpu-time that is left for the process.
+	 * @return
+	 */
+	public long timeLeftInIo() {
+		return ioTimeNeeded;
+	}
+	
+	// ##############################################
+	// ########### FUNCTIONS FOR STATISTICS #########
+	// ##############################################
+	
     /**
 	 * Updates the statistics collected by the given Statistic object, adding
 	 * data collected by this process. This method is called when the process
@@ -117,32 +146,56 @@ public class Process implements Constants
 		statistics.nofCompletedProcesses++;
 	}
 
+	/**
+	 * This method is called when the process leaves the memory queue (and
+	 * enters the cpu queue).
+     * @param clock The time when the process leaves the memory queue.
+     */
+    public void leftMemoryQueue(long clock) {
+		  timeSpentWaitingForMemory += clock - timeOfLastEvent;
+		  nofTimesInMemoryQueue++;  // This will happen just once.
+		  nofTimesInReadyQueue++;
+		  timeOfLastEvent = clock;
+    }
+
+    
+	/** Updates statistics when the process leave CPU queue (and enter CPU) */
 	public void leftCpuQueue(long clock) {
 		timeSpentInReadyQueue += clock - timeOfLastEvent;
 		timeOfLastEvent = clock;
 	}
 	
+	/** Updates statistics when the process leave CPU (and enter either CPU-queue, I/O-queue or leave the system).
+	 * Update counter when process enter CPU-queue or I/O-queue.  */
+	public void leftCpu(long clock, int type) {
+		long timePassed = clock - timeOfLastEvent;
+		timeSpentInCpu += timePassed;
+		timeToNextIoOperation -= timePassed;
+		timeOfLastEvent = clock; 
+		
+		switch (type) {
+		case Constants.SWITCH_PROCESS:
+			nofTimesInReadyQueue++;
+			break;
+		case Constants.IO_REQUEST:
+			nofTimesInIoQueue++;
+			break;
+		}
+	}
+	
+	/** Update statistics when the process leave I/O queue (and enter I/O) */
 	public void leftIoQueue(long clock) {
 		timeSpentWaitingForIo += clock - timeOfLastEvent;
 		timeOfLastEvent = clock;
 	}
 	
-	public long getCpuTimeLeft() {
-		return cpuTimeNeeded - timeSpentInCpu;
+	/** Updates statistics when the process leave I/O (and enter CPU queue) */
+	public void leftIo(long clock) {
+		timeSpentInIo += clock - timeOfLastEvent;
+		timeOfLastEvent = clock;
+		nofTimesInReadyQueue++; 
+		timeToNextIoOperation = avgIoInterval;
 	}
-	
-	public void timePassedInCpu(long timePassed) {
-		timeSpentInCpu += timePassed; 
-	}
-	
-	public long timeLeftInCpu() {
-		return cpuTimeNeeded - timeSpentInCpu;
-	}
-	
-	public long timeBeforeIo() {
-		return timeToNextIoOperation; 			// TODO: Husk å oppdatere tiden!
-	}
-	
 	
 	// Add more methods as needed
 }
