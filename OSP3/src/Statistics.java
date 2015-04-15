@@ -57,7 +57,7 @@ public class Statistics
 		System.out.println("Number of created processes:                                  "+nofCreatedProcesses);
 		System.out.println("Number of (forced) process switches:                          "+nofSwitchedProcesses);
 		System.out.println("Number of processed I/O operations:                           "+nofIoOperations);
-		System.out.println("Average throughput (processes per second):                    "+(float)nofCompletedProcesses/simulationLength);
+		System.out.println("Average throughput (processes per second):                    "+(float)nofCompletedProcesses*1000/simulationLength);
 		
 		System.out.println();
 		System.out.println("Total CPU time spent processing:                              "+cpuTimeSpentProcessing+" ms");
@@ -74,9 +74,9 @@ public class Statistics
 		System.out.println("Average I/O queue length:                                  "+(float)ioQueueLengthTime/simulationLength);
 		
 		if(nofCompletedProcesses > 0) {
-			System.out.println("Average # of times a process has been placed in memory queue: "+1);
-			System.out.println("Average # of times a process has been placed in cpu queue: "+1);
-			System.out.println("Average # of times a process has been placed in I/O queue: "+1);
+			System.out.println("Average # of times a process has been placed in memory queue: "+(float)totalNofTimesInMemoryQueue/nofCompletedProcesses);
+			System.out.println("Average # of times a process has been placed in cpu queue: "+(float)totalNofTimesIncpuQueue/nofCompletedProcesses);
+			System.out.println("Average # of times a process has been placed in I/O queue: "+(float)totalNofTimesInIoQueue/nofCompletedProcesses);
 			
 			System.out.println();
 			System.out.println("Average time spent in system per process:            "+" ms");

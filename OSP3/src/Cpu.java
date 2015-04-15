@@ -11,6 +11,11 @@ public class Cpu {
 	
 	private Gui gui;
 	
+	private long timeSpentProcessing = 0;
+	
+	/** Keeps track of the clock when the cpu started it's last process. This is a help variable for processingTime. */
+	private long timeOfLastProcess;
+	
 	public Cpu(Queue cpuQueue, Statistics statistics, long maxCpuTime, Gui gui) {
 		this.cpuQueue = cpuQueue;
 		this.statistics = statistics;
@@ -25,6 +30,7 @@ public class Cpu {
 	public Event setNextActiveProcess(long clock) {
 		if (!cpuQueue.isEmpty() && activeProcess == null) {
 			this.activeProcess = (Process) cpuQueue.removeNext();
+			timeOfLastProcess = clock;
 			activeProcess.leftCpuQueue(clock);
 			updateGui();
 			return nextEventCpu(clock);
@@ -36,7 +42,12 @@ public class Cpu {
 
 	public void insertProcessToQueue(Process p) {
 		cpuQueue.insert(p);
-		
+	}
+	
+	public void removeActiveProcess(long clock) {
+		activeProcess = null;
+		timeSpentProcessing += clock - timeOfLastProcess;
+		timeOfLastProcess = -1;
 	}
 
 	public Event switchProcess(long clock) {
@@ -46,7 +57,7 @@ public class Cpu {
 			// Update statistics of active process.
 			activeProcess.leftCpu(clock, Constants.SWITCH_PROCESS);
 			statistics.nofSwitchedProcesses++;
-			activeProcess = null;
+			removeActiveProcess(clock);
 		}
 		return setNextActiveProcess(clock);
 	}
@@ -84,29 +95,23 @@ public class Cpu {
 	public Process ioRequest(long clock) {
 		Process p = getActiveProcess();
 		p.leftCpu(clock, Constants.IO_REQUEST);
-		activeProcess = null;
+		removeActiveProcess(clock);
 		updateGui();
 		return p;
 	}
 	
 	public void endProcess(long clock) {
 		activeProcess.leftCpu(clock, Constants.END_PROCESS);
-		activeProcess = null;
+		removeActiveProcess(clock);
 		updateGui();
 	}
+	
+	
+	// Help functions 
 	
 	public boolean isIdle() {
 		return activeProcess == null;
 	}
-	
-	public void timePassed(long timePassed) {
-		statistics.cpuQueueLengthTime += cpuQueue.getQueueLength()*timePassed;
-		if (cpuQueue.getQueueLength() > statistics.cpuQueueLargestLength) {
-			statistics.cpuQueueLargestLength = cpuQueue.getQueueLength(); 
-		}
-		// Update timepassed i activeProcess 
-	}
-	
 	
 	public Process getActiveProcess() {
 		return activeProcess;
@@ -115,6 +120,17 @@ public class Cpu {
 	private void updateGui() {
 		gui.setCpuActive(activeProcess);
 	}
+	
+	// Statistics
+	public void timePassed(long timePassed) {
+		statistics.cpuTimeSpentProcessing = timeSpentProcessing;
+		statistics.cpuQueueLengthTime += cpuQueue.getQueueLength()*timePassed;
+		if (cpuQueue.getQueueLength() > statistics.cpuQueueLargestLength) {
+			statistics.cpuQueueLargestLength = cpuQueue.getQueueLength(); 
+		}
+		// Update timepassed i activeProcess 
+	}
+	
 	
 	
 }

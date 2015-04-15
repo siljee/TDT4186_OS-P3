@@ -49,10 +49,12 @@ public class Memory {
      * @param clock The current time.
      */  
 	public Process checkMemory(long clock) {
+		System.out.println("memory: " + freeMemory );
 		if(!memoryQueue.isEmpty()) { 
 			Process nextProcess = (Process)memoryQueue.getNext();
 			if(nextProcess.getMemoryNeeded() <= freeMemory) {
 				// Allocate memory to this process
+				System.out.println("her");
 				freeMemory -= nextProcess.getMemoryNeeded();
 				nextProcess.leftMemoryQueue(clock);
 				memoryQueue.removeNext();

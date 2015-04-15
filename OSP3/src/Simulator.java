@@ -144,18 +144,15 @@ public class Simulator implements Constants
 			cpu.insertProcessToQueue(p);
 			p.leftMemoryQueue(clock);
 			
+			
 			if (cpu.isIdle()) {
 				eventQueue.insertEvent(cpu.setNextActiveProcess(clock));
-				//eventQueue.insertEvent(new Event(SWITCH_PROCESS, clock));
 			}
-			if (io.isIdle()) {
-				eventQueue.insertEvent(io.setNextActiveProcess(clock));
-			}
+	//		if (io.isIdle()) {
+	//			eventQueue.insertEvent(io.setNextActiveProcess(clock));
+	//		}
 			// Also add new events to the event queue if needed
 
-			// Since we haven't implemented the CPU and I/O device yet,
-			// we let the process leave the system immediately, for now.
-//			memory.processCompleted(p);
 			// Try to use the freed memory:
 			flushMemoryQueue();
 			// Update statistics
@@ -177,10 +174,10 @@ public class Simulator implements Constants
 	 * Ends the active process, and deallocates any resources allocated to it. Free memory and sett cpu to idle.
 	 */
 	private void endProcess() {
+		System.out.println("end process!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		memory.processCompleted(cpu.getActiveProcess());
 		cpu.endProcess(clock);
-		cpu.setNextActiveProcess(clock);
-
+		eventQueue.insertEvent(cpu.setNextActiveProcess(clock));
 	}
 
 	/**
@@ -190,7 +187,8 @@ public class Simulator implements Constants
 	private void processIoRequest() {
 		Process p = cpu.ioRequest(clock);
 		io.insertProcessToQueue(p);
-		cpu.setNextActiveProcess(clock);
+		eventQueue.insertEvent(io.setNextActiveProcess(clock));
+		eventQueue.insertEvent(cpu.setNextActiveProcess(clock));
 	}
 
 	/**
@@ -200,7 +198,8 @@ public class Simulator implements Constants
 	private void endIoOperation() {
 		Process p = io.removeActiveProcess(clock);
 		cpu.insertProcessToQueue(p);
-		io.setNextActiveProcess(clock);
+		eventQueue.insertEvent(io.setNextActiveProcess(clock));
+		eventQueue.insertEvent(cpu.setNextActiveProcess(clock));
 	}
 
 	/**

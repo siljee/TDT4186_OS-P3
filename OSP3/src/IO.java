@@ -18,16 +18,20 @@ public class IO {
 	}
 	
 	public Process removeActiveProcess(long clock) {
-		Process p = getActiveProcess();
-		p.leftIo(clock);
-		activeProcess = null;
-		updateGui();
-		return p;
+		if (!isIdle()) {
+			Process p = getActiveProcess();
+			p.leftIo(clock);
+			activeProcess = null;
+			updateGui();
+			statistics.nofIoOperations++;
+			return p;
+		}
+		return null;
 	}
 
 	
 	public Event setNextActiveProcess(long clock) {
-		if (!ioQueue.isEmpty()) {
+		if (!ioQueue.isEmpty() && activeProcess == null) {
 			this.activeProcess = (Process) ioQueue.removeNext();
 			System.out.println(activeProcess.getMemoryNeeded());
 			updateGui();
