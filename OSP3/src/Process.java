@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.*;
+import java.util.spi.TimeZoneNameProvider;
 
 import javax.sql.rowset.CachedRowSet;
 
@@ -22,15 +23,23 @@ public class Process implements Constants
 	private Color color;
 	/** The amount of memory needed by this process */
     private long memoryNeeded;
-	/** The amount of cpu time still needed by this process */
+	/** The amount of CPU time needed by this process */
     private long cpuTimeNeeded;
+	/** The amount of I/O time needed by this process next time*/
     private long ioTimeNeeded;
 	/** The average time between the need for I/O operations for this process */
     private long avgIoInterval;
 	/** The time left until the next time this process needs I/O */
     private long timeToNextIoOperation = 0;
+ 
+    /** The global time of the last event involving this process */
+	private long timeOfLastEvent;
+	/** Time of creation. */
+	private long creationTime;
 
-    // These variables will be used for statistics 
+    // These variables will be used for statistics
+	/** The time that this process has spent in the system */
+	private long timeSpentInSystem;
 	/** The time that this process has spent waiting in the memory queue */
 	private long timeSpentWaitingForMemory = 0;
 	/** The time that this process has spent waiting in the CPU queue */
@@ -49,9 +58,9 @@ public class Process implements Constants
 	/** The number of times that this process has been placed in the I/O queue */
 	private long nofTimesInIoQueue = 0;
 
-	/** The global time of the last event involving this process */
-	private long timeOfLastEvent;
-
+	
+	
+	
 	/**
 	 * Creates a new process with given parameters. Other parameters are randomly
 	 * determined.
@@ -59,14 +68,17 @@ public class Process implements Constants
 	 * @param creationTime	The global time when this process is created.
 	 */
 	public Process(long memorySize, long creationTime) {
+		this.creationTime = creationTime;
 		// Memory need varies from 100 kB to 25% of memory size
 		memoryNeeded = 100 + (long)(Math.random()*(memorySize/4-100));
 		// CPU time needed varies from 100 to 10000 milliseconds
 		cpuTimeNeeded = 100 + (long)(Math.random()*9900);
 		// Average interval between I/O requests varies from 1% to 25% of CPU time needed
 		avgIoInterval = (1 + (long)(Math.random()*25))*cpuTimeNeeded/100;
+		
 		timeToNextIoOperation = avgIoInterval;
-		ioTimeNeeded = avgIoInterval; // TODO: RANDOMIZE som i oppgave teksten (s.8?)
+		
+		ioTimeNeeded = avgIoInterval; 
 		// The first and latest event involving this process is its creation
 		timeOfLastEvent = creationTime;
 		// Assign a process ID
@@ -142,11 +154,23 @@ public class Process implements Constants
      * @param statistics	The Statistics object to be updated.
      */
 	public void updateStatistics(Statistics statistics) {
+		// Time spent
+		statistics.totalTimeSpentInSystem += timeSpentInSystem;
+		System.out.println(timeSpentWaitingForMemory);
 		statistics.totalTimeSpentWaitingForMemory += timeSpentWaitingForMemory;
+		statistics.totalTimeSpentWaitingForCpu += timeSpentInReadyQueue;
+		statistics.totalTimeSpentWaitingForIo += timeSpentWaitingForIo;
+		statistics.totalTimeSpentInCpu += timeSpentInCpu;
+		statistics.totalTimeSpentInIo += timeSpentInIo;
+		
+		// Number of times
 		statistics.nofCompletedProcesses++;
 		statistics.totalNofTimesInMemoryQueue += nofTimesInMemoryQueue;
-		statistics.totalNofTimesIncpuQueue += nofTimesInReadyQueue;
+		statistics.totalNofTimesInReadyQueue += nofTimesInReadyQueue;
 		statistics.totalNofTimesInIoQueue += nofTimesInIoQueue;
+		
+		
+		
 	}
 
 	/**
@@ -155,7 +179,7 @@ public class Process implements Constants
      * @param clock The time when the process leaves the memory queue.
      */
     public void leftMemoryQueue(long clock) {
-		  timeSpentWaitingForMemory += clock - timeOfLastEvent;
+		  timeSpentWaitingForMemory += clock - creationTime;
 		  nofTimesInMemoryQueue++;  // This will happen just once.
 		  nofTimesInReadyQueue++;
 		  timeOfLastEvent = clock;
@@ -183,11 +207,14 @@ public class Process implements Constants
 		case Constants.IO_REQUEST:
 			nofTimesInIoQueue++;
 			break;
+		case Constants.END_PROCESS:
+			timeSpentInSystem = clock - creationTime;
 		}
 	}
 	
 	/** Update statistics when the process leave I/O queue (and enter I/O) */
 	public void leftIoQueue(long clock) {
+		nofTimesInReadyQueue++;
 		timeSpentWaitingForIo += clock - timeOfLastEvent;
 		timeOfLastEvent = clock;
 	}
@@ -197,7 +224,8 @@ public class Process implements Constants
 		timeSpentInIo += clock - timeOfLastEvent;
 		timeOfLastEvent = clock;
 		nofTimesInReadyQueue++; 
-		timeToNextIoOperation = avgIoInterval;
+		timeToNextIoOperation = (1  + (long)(Math.random()*25))*cpuTimeNeeded/100;
+		ioTimeNeeded = (1 + (long)(Math.random()*25))*cpuTimeNeeded/100;
 	}
 	
 	// Add more methods as needed

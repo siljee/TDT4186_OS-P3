@@ -33,7 +33,6 @@ public class IO {
 	public Event setNextActiveProcess(long clock) {
 		if (!ioQueue.isEmpty() && activeProcess == null) {
 			this.activeProcess = (Process) ioQueue.removeNext();
-			System.out.println(activeProcess.getMemoryNeeded());
 			updateGui();
 			activeProcess.leftIoQueue(clock);
 			

@@ -65,27 +65,19 @@ public class Cpu {
 	public Event nextEventCpu(long clock) {
 		int type;
 		long timePassed;
-		System.out.println(activeProcess);
 		long cpuTime = activeProcess.timeLeftInCpu();
 		long ioTime = activeProcess.timeBeforeIo();
 		
-		System.out.println("RoundRobin: " + maxCpuTime);
-		System.out.println("CPU time: "+ cpuTime);
-		System.out.println("IO time: " + ioTime);
-		
 		if (maxCpuTime < cpuTime && maxCpuTime < ioTime) {
 			// Round robin will happen first
-			System.out.println("switch switch");
 			type = Constants.SWITCH_PROCESS;
 			timePassed = maxCpuTime;
 		} else if (ioTime < cpuTime) {
 			// I/O Request will happen first
-			System.out.println("switch io");
 			type = Constants.IO_REQUEST;
 			timePassed = ioTime;
 		} else {
 			// The process will end first.
-			System.out.println("switch end");
 			type = Constants.END_PROCESS;
 			timePassed = cpuTime;
 		}
@@ -102,8 +94,10 @@ public class Cpu {
 	
 	public void endProcess(long clock) {
 		activeProcess.leftCpu(clock, Constants.END_PROCESS);
+		activeProcess.updateStatistics(statistics);
 		removeActiveProcess(clock);
 		updateGui();
+		
 	}
 	
 	

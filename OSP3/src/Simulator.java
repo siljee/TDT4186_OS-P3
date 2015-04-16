@@ -80,7 +80,6 @@ public class Simulator implements Constants
 			if (clock < simulationLength) {
 				processEvent(event);
 			}
-			System.out.println(eventQueue.getSize());
 			// Note that the processing of most events should lead to new
 			// events being added to the event queue!
 			
@@ -139,24 +138,19 @@ public class Simulator implements Constants
 		
 		// As long as there is enough memory, processes are moved from the memory queue to the cpu queue
 		while(p != null) {
-			
 			// TODO: Add this process to the CPU queue!
 			cpu.insertProcessToQueue(p);
-			p.leftMemoryQueue(clock);
+
 			
 			
 			if (cpu.isIdle()) {
 				eventQueue.insertEvent(cpu.setNextActiveProcess(clock));
 			}
-	//		if (io.isIdle()) {
-	//			eventQueue.insertEvent(io.setNextActiveProcess(clock));
-	//		}
-			// Also add new events to the event queue if needed
 
 			// Try to use the freed memory:
 			flushMemoryQueue();
 			// Update statistics
-			p.updateStatistics(statistics);
+			//p.updateStatistics(statistics);
 
 			// Check for more free memory
 			p = memory.checkMemory(clock);
@@ -174,7 +168,6 @@ public class Simulator implements Constants
 	 * Ends the active process, and deallocates any resources allocated to it. Free memory and sett cpu to idle.
 	 */
 	private void endProcess() {
-		System.out.println("end process!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		memory.processCompleted(cpu.getActiveProcess());
 		cpu.endProcess(clock);
 		eventQueue.insertEvent(cpu.setNextActiveProcess(clock));
