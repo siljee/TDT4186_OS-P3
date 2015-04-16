@@ -62,6 +62,7 @@ public class Cpu {
 		return setNextActiveProcess(clock);
 	}
 	
+	
 	public Event nextEventCpu(long clock) {
 		int type;
 		long timePassed;
@@ -69,7 +70,12 @@ public class Cpu {
 		long ioTime = activeProcess.timeBeforeIo();
 		
 		if (maxCpuTime < cpuTime && maxCpuTime < ioTime) {
+			/*
+			 * To optimize round robin one could compute the average for a process runtime and set round robin time to this.
+			 * Hence less switches will happen and more processing time.
+			 */
 			// Round robin will happen first
+			
 			type = Constants.SWITCH_PROCESS;
 			timePassed = maxCpuTime;
 		} else if (ioTime < cpuTime) {
